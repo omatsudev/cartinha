@@ -2,6 +2,17 @@ import { Player } from '@/lib/domain/entities/Player'
 import { GameState } from '@/lib/domain/entities/GameState'
 import { cn } from '@/lib/utils/cn'
 
+function capitalize(name: string) {
+  return name.replace(/\b\w/g, c => c.toUpperCase())
+}
+
+export function teamLabel(players: Player[], team: 0 | 1): string {
+  return players
+    .filter(p => p.team === team && p.role === 'player')
+    .map(p => capitalize(p.nickname))
+    .join('/')
+}
+
 interface ScoreBoardProps {
   players: Player[]
   gameState: GameState
@@ -28,11 +39,9 @@ export function ScoreBoard({ players, gameState, playerCount, myPlayerSeat }: Sc
             'flex-1 rounded-xl p-2 sm:p-3 text-center border',
             myTeam === team ? 'bg-green-800/60 border-green-500' : 'bg-black/20 border-white/10',
           )}>
-            <p className="text-xs text-green-300 mb-1">Equipe {team + 1}</p>
+            <p className="text-xs text-green-300 mb-1 font-semibold truncate">{teamLabel(activePlayers, team as 0 | 1)}</p>
             <p className="text-lg sm:text-2xl font-black text-white">{score}</p>
-            <div className="text-xs text-green-400 mt-1 space-y-0.5">
-              {ps.map(p => <p key={p.id}>{p.nickname}{p.seat === myPlayerSeat ? ' (você)' : ''}</p>)}
-            </div>
+            <p className="text-[10px] text-green-500 mt-0.5">{ps.find(p => p.seat === myPlayerSeat) ? '(você)' : ''}</p>
           </div>
         ))}
       </div>

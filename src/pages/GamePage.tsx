@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { GameProvider, useGame } from '@/lib/context/GameContext'
 import { GameBoard } from '@/components/game/GameBoard'
 import { ShufflePhase } from '@/components/game/ShufflePhase'
-import { ScoreBoard } from '@/components/game/ScoreBoard'
+import { ScoreBoard, teamLabel } from '@/components/game/ScoreBoard'
 import { ChatPanel, ChatFloatingButton, ChatDrawer } from '@/components/chat/ChatPanel'
 import { SupabaseGameRepository } from '@/lib/infrastructure/repositories/SupabaseGameRepository'
 import { SupabaseRoomRepository } from '@/lib/infrastructure/repositories/SupabaseRoomRepository'
@@ -88,12 +88,12 @@ function SubGameOverScreen() {
               <div className="flex gap-2">
                 <GameWinsBar
                   wins={gameState.gameWins['0'] ?? 0}
-                  label="Equipe 1"
+                  label={teamLabel(players, 0)}
                   highlight={players.find(p => p.seat === myPlayer?.seat)?.team === 0}
                 />
                 <GameWinsBar
                   wins={gameState.gameWins['1'] ?? 0}
-                  label="Equipe 2"
+                  label={teamLabel(players, 1)}
                   highlight={players.find(p => p.seat === myPlayer?.seat)?.team === 1}
                 />
               </div>
@@ -183,7 +183,7 @@ function MatchOverScreen() {
 
   let winnerLabel = ''
   if (playerCount === 4) {
-    winnerLabel = `Equipe ${Number(winnerKey) + 1}`
+    winnerLabel = teamLabel(players, Number(winnerKey) as 0 | 1)
   } else {
     winnerLabel = players.find(p => p.seat === Number(winnerKey))?.nickname ?? 'Jogador'
   }
@@ -199,7 +199,7 @@ function MatchOverScreen() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             {[0, 1].map(team => (
               <div key={team} className={`rounded-xl p-3 border ${String(team) === winnerKey ? 'border-yellow-400 bg-yellow-900/20' : 'border-green-800 bg-black/20'}`}>
-                <p className="text-xs text-green-400">Equipe {team + 1}</p>
+                <p className="text-xs text-green-400 font-semibold truncate">{teamLabel(players, team as 0 | 1)}</p>
                 <div className="flex justify-center gap-0.5 my-1">
                   {Array.from({ length: WIN_GOAL }).map((_, i) => (
                     <Star key={i} className={`w-4 h-4 ${i < (gameState.gameWins[String(team)] ?? 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />
