@@ -93,11 +93,15 @@ export async function playCardUseCase(input: Input): Promise<void> {
   const gamePoints = calculateGamePoints(newScores, playerCount, winnerTeam)
 
   const newGameWins = { ...state.gameWins }
-  const winnerKey = String(playerCount === 4 ? winnerTeam : winnerSeat)
-  newGameWins[winnerKey] = (newGameWins[winnerKey] ?? 0) + gamePoints
+  const isTie = winnerTeam === -1
+  if (!isTie) {
+    const winnerKey = String(playerCount === 4 ? winnerTeam : winnerSeat)
+    newGameWins[winnerKey] = (newGameWins[winnerKey] ?? 0) + gamePoints
+  }
 
   const newDealerSeat = (state.dealerSeat + 1) % playerCount
-  const matchOver = (newGameWins[winnerKey] ?? 0) >= 4
+  // Match is over only if someone reaches 4 wins (ties don't end the match)
+  const matchOver = !isTie && Object.values(newGameWins).some(v => v >= 4)
 
   await gameRepo.endSubGame(
     roomId,

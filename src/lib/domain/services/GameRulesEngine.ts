@@ -64,6 +64,7 @@ export function isGameOver(gameType: GameType, deckRemaining: number, handSizes:
 export function determineWinner(scores: Record<string, number>): number {
   const team0 = scores['0'] ?? 0
   const team1 = scores['1'] ?? 0
+  if (team0 === team1) return -1  // tie (60-60)
   return team0 > team1 ? 0 : 1
 }
 
@@ -76,6 +77,7 @@ export function calculateGamePoints(
   playerCount: 2 | 4,
   winnerTeam: number,
 ): number {
+  if (winnerTeam === -1) return 0  // tie — no points awarded
   const loserKey = winnerTeam === 0 ? '1' : '0'
   const loserScore = scores[loserKey] ?? 0
 

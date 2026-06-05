@@ -68,11 +68,13 @@ function SubGameOverScreen() {
           <div className="text-center mb-5">
             <Trophy className="w-10 h-10 text-yellow-400 mx-auto mb-2" />
             <h2 className="text-xl font-black text-white">Rodada {gameState.subGameNumber} encerrada</h2>
-            {pointsEarned > 1 && (
+            {gameState.winnerTeam === -1 ? (
+              <p className="text-blue-300 text-sm mt-1 font-semibold">🤝 Empate! (60×60) — nenhum ponto de partida</p>
+            ) : pointsEarned > 1 ? (
               <p className="text-yellow-300 text-sm mt-1 font-semibold">
-                {pointsEarned === 4 ? '🏆 Capote! +4 pontos de partida!' : `⭐ Menos de 30! +2 pontos de partida`}
+                {pointsEarned === 4 ? '🏆 Capote! +4 pontos de partida!' : '⭐ Menos de 30! +2 pontos de partida'}
               </p>
-            )}
+            ) : null}
           </div>
 
           {/* Round scores */}

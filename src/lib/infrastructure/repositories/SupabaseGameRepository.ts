@@ -179,16 +179,18 @@ export class SupabaseGameRepository implements IGameRepository {
     deckRemaining: number,
     gameWins: Record<string, number>,
     dealerSeat: number,
+    playerCount: number,
     subGameNumber: number,
     sessionCards: string[],
     shuffleIntensity: ShuffleIntensity,
   ): Promise<void> {
+    const firstSeat = (dealerSeat + 1) % playerCount
     const { error } = await supabase
       .from('card_game_state')
       .update({
         trump_suit: trumpSuit,
         trump_card_code: trumpCardCode,
-        current_seat: 0,
+        current_seat: firstSeat,
         current_trick: [],
         last_trick: [],
         scores: { '0': 0, '1': 0 },

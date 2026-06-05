@@ -87,8 +87,9 @@ export async function dealNewSubGameUseCase(
     deckRemaining,
     state.gameWins,
     state.dealerSeat,
+    playerIds.length,
     state.subGameNumber + 1,
-    [],           // reset session_cards for the new sub-game
+    [],
     intensity,
   )
 }
