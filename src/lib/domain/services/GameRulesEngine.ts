@@ -8,18 +8,12 @@ export interface TrickResult {
   pointsWon: number
 }
 
-/**
- * Determines the winner of a completed trick.
- * Bisca: no follow-suit required. Trump beats non-trump. Among same suit, highest rank wins.
- * Sueca: must follow suit (enforced in UI). Same winning logic.
- */
 export function evaluateTrick(
   trick: TrickCard[],
   trumpSuit: Suit,
   _gameType: GameType,
 ): TrickResult {
   const cards = trick.map(t => ({ ...t, card: parseCard(t.cardCode) }))
-
   const ledSuit = cards[0].card.suit
   let winner = cards[0]
 
@@ -46,27 +40,18 @@ export function evaluateTrick(
   return { winnerSeat: winner.seat, pointsWon }
 }
 
-/**
- * Sueca: checks if player must follow suit.
- * Returns true if the card play is legal.
- */
 export function isLegalSuecaPlay(
   card: string,
   hand: string[],
   ledSuit: Suit | null,
 ): boolean {
-  if (!ledSuit) return true  // leading the trick
-
+  if (!ledSuit) return true
   const parsedCard = parseCard(card)
   const hasSuit = hand.some(c => parseCard(c).suit === ledSuit)
-
-  if (!hasSuit) return true  // can play anything if no cards of led suit
+  if (!hasSuit) return true
   return parsedCard.suit === ledSuit
 }
 
-/**
- * Returns the team for a seat in a 4-player game (0,2 = team 0; 1,3 = team 1)
- */
 export function seatToTeam(seat: number): 0 | 1 {
   return (seat % 2) as 0 | 1
 }
@@ -80,4 +65,21 @@ export function determineWinner(scores: Record<string, number>): number {
   const team0 = scores['0'] ?? 0
   const team1 = scores['1'] ?? 0
   return team0 > team1 ? 0 : 1
+}
+
+// Returns how many game-win points the winner earns for this sub-game
+// 1 = normal win (loser had ≥30 pts)
+// 2 = loser had <30 pts
+// 4 = capote (loser had 0 pts — winner takes entire match)
+export function calculateGamePoints(
+  scores: Record<string, number>,
+  playerCount: 2 | 4,
+  winnerTeam: number,
+): number {
+  const loserKey = winnerTeam === 0 ? '1' : '0'
+  const loserScore = scores[loserKey] ?? 0
+
+  if (loserScore === 0) return 4
+  if (loserScore < 30) return 2
+  return 1
 }
