@@ -50,10 +50,10 @@ export function TrickArea({ trick, lastTrick, players, trumpSuit, trumpCardCode,
   }, [trick, lastTrick])
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full">
+    <div className="flex flex-col items-center gap-2 w-full">
 
       {/* Trump card + deck info */}
-      <div className="flex items-center gap-3 flex-wrap justify-center">
+      <div className="flex items-center gap-2 flex-wrap justify-center">
         {showTrumpCard && (
           <div className="flex flex-col items-center gap-1">
             <span className="text-green-300 text-xs font-medium">Trunfo</span>
@@ -88,7 +88,7 @@ export function TrickArea({ trick, lastTrick, players, trumpSuit, trumpCardCode,
 
       {/* Current / last trick */}
       <div className={cn(
-        'flex items-center justify-center gap-2 sm:gap-3 min-h-[80px] sm:min-h-[90px] transition-opacity duration-500',
+        'flex items-center justify-center gap-2 sm:gap-3 transition-opacity duration-500',
         fading && 'opacity-0',
       )}>
         {visibleTrick.length === 0 ? (

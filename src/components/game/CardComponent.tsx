@@ -14,8 +14,8 @@ interface CardProps {
 }
 
 const sizes = {
-  sm: { card: 'w-14 h-20 sm:w-16 sm:h-24', label: 'text-[10px]', sym: 'text-[12px]', pad: 'p-[3px]' },
-  md: { card: 'w-18 h-24 sm:w-20 sm:h-28', label: 'text-[12px]', sym: 'text-[14px]', pad: 'p-1' },
+  sm: { card: 'w-11 h-[62px] sm:w-12 sm:h-[68px]', label: 'text-[8px]', sym: 'text-[10px]', pad: 'p-[2px]' },
+  md: { card: 'w-16 h-24 sm:w-20 sm:h-28', label: 'text-[11px]', sym: 'text-[13px]', pad: 'p-1' },
   lg: { card: 'w-20 h-28 sm:w-24 sm:h-32 md:w-28 md:h-36', label: 'text-[14px]', sym: 'text-[17px]', pad: 'p-[5px]' },
 }
 

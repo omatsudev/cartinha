@@ -62,10 +62,12 @@ export function GameBoard({ playerHandSizes, onRefreshHandSizes }: GameBoardProp
   }
 
   return (
-    <div className="flex flex-col h-full gap-2 sm:gap-3 px-2 py-2 sm:px-4 sm:py-4">
-      <ScoreBoard players={players} gameState={gameState} playerCount={playerCount} myPlayerSeat={myPlayer.seat} />
+    <div className="flex flex-col h-full overflow-hidden gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2">
+      <div className="shrink-0">
+        <ScoreBoard players={players} gameState={gameState} playerCount={playerCount} myPlayerSeat={myPlayer.seat} />
+      </div>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center shrink-0">
         {opponents.filter(p => getOpponentPosition(p.seat) === 'top').map(p => (
           <OpponentHand
             key={p.id}
@@ -77,18 +79,20 @@ export function GameBoard({ playerHandSizes, onRefreshHandSizes }: GameBoardProp
         ))}
       </div>
 
-      <div className="flex flex-1 items-center gap-2 sm:gap-4">
-        {opponents.filter(p => getOpponentPosition(p.seat) === 'left').map(p => (
-          <OpponentHand
-            key={p.id}
-            player={p}
-            cardCount={playerHandSizes[p.seat] ?? 0}
-            isCurrentTurn={gameState.currentSeat === p.seat && gameState.phase === 'playing'}
-            position="left"
-          />
-        ))}
+      <div className="flex flex-1 min-h-0 items-stretch gap-1 sm:gap-2">
+        <div className="flex items-center shrink-0">
+          {opponents.filter(p => getOpponentPosition(p.seat) === 'left').map(p => (
+            <OpponentHand
+              key={p.id}
+              player={p}
+              cardCount={playerHandSizes[p.seat] ?? 0}
+              isCurrentTurn={gameState.currentSeat === p.seat && gameState.phase === 'playing'}
+              position="left"
+            />
+          ))}
+        </div>
 
-        <div className="flex-1 felt-table rounded-2xl border border-green-700/50 flex items-center justify-center p-2 sm:p-4 min-h-[130px] sm:min-h-[160px]">
+        <div className="flex-1 felt-table rounded-2xl border border-green-700/50 flex items-center justify-center p-2 sm:p-3 overflow-hidden">
           <TrickArea
             trick={gameState.currentTrick}
             lastTrick={gameState.lastTrick}
@@ -102,18 +106,20 @@ export function GameBoard({ playerHandSizes, onRefreshHandSizes }: GameBoardProp
           />
         </div>
 
-        {opponents.filter(p => getOpponentPosition(p.seat) === 'right').map(p => (
-          <OpponentHand
-            key={p.id}
-            player={p}
-            cardCount={playerHandSizes[p.seat] ?? 0}
-            isCurrentTurn={gameState.currentSeat === p.seat && gameState.phase === 'playing'}
-            position="right"
-          />
-        ))}
+        <div className="flex items-center shrink-0">
+          {opponents.filter(p => getOpponentPosition(p.seat) === 'right').map(p => (
+            <OpponentHand
+              key={p.id}
+              player={p}
+              cardCount={playerHandSizes[p.seat] ?? 0}
+              isCurrentTurn={gameState.currentSeat === p.seat && gameState.phase === 'playing'}
+              position="right"
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="pb-safe">
+      <div className="shrink-0 pb-safe">
         <PlayerHand
           cards={myHand}
           isMyTurn={isMyTurn}

@@ -304,8 +304,8 @@ function GameContent() {
   if (gameState.phase === 'choosing_shuffle') return <ChoosingShuffleScreen />
 
   return (
-    <div className="min-h-screen felt-table flex flex-col">
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-black/20 border-b border-green-800/50">
+    <div className="h-screen overflow-hidden felt-table flex flex-col">
+      <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 py-1.5 bg-black/20 border-b border-green-800/50">
         <span className="text-sm font-bold text-white">{GAME_TYPE_LABEL[room.gameType]}</span>
         {trump && (
           <span className={`text-sm font-bold flex items-center gap-1 ${trump === 'ouros' || trump === 'copas' ? 'text-red-400' : 'text-gray-200'}`}>
@@ -319,12 +319,12 @@ function GameContent() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Game area */}
         <div className="flex-1 overflow-hidden relative">
           <GameBoard playerHandSizes={handSizes} onRefreshHandSizes={loadHandSizes} />
           {/* Floating chat button on mobile */}
-          <div className="absolute bottom-20 right-3 sm:hidden">
+          <div className="absolute bottom-4 right-3 sm:hidden">
             <ChatFloatingButton unread={unread} onClick={() => { setChatOpen(true); setUnread(0) }} />
           </div>
         </div>

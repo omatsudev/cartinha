@@ -36,12 +36,12 @@ export function ScoreBoard({ players, gameState, playerCount, myPlayerSeat }: Sc
       <div className="flex gap-2 sm:gap-4">
         {[{ team: 0, ps: team0Players, score: team0Score }, { team: 1, ps: team1Players, score: team1Score }].map(({ team, ps, score }) => (
           <div key={team} className={cn(
-            'flex-1 rounded-xl p-2 sm:p-3 text-center border',
+            'flex-1 rounded-xl p-1.5 sm:p-2 text-center border',
             myTeam === team ? 'bg-green-800/60 border-green-500' : 'bg-black/20 border-white/10',
           )}>
-            <p className="text-xs text-green-300 mb-1 font-semibold truncate">{teamLabel(activePlayers, team as 0 | 1)}</p>
-            <p className="text-lg sm:text-2xl font-black text-white">{score}</p>
-            <p className="text-[10px] text-green-500 mt-0.5">{ps.find(p => p.seat === myPlayerSeat) ? '(você)' : ''}</p>
+            <p className="text-[11px] text-green-300 font-semibold truncate leading-tight">{teamLabel(activePlayers, team as 0 | 1)}</p>
+            <p className="text-xl sm:text-2xl font-black text-white leading-tight">{score}</p>
+            <p className="text-[9px] text-green-500">{ps.find(p => p.seat === myPlayerSeat) ? '(você)' : ''}</p>
           </div>
         ))}
       </div>
@@ -53,11 +53,11 @@ export function ScoreBoard({ players, gameState, playerCount, myPlayerSeat }: Sc
     <div className="flex gap-2">
       {activePlayers.map(p => (
         <div key={p.id} className={cn(
-          'flex-1 rounded-xl p-2 sm:p-3 text-center border',
+          'flex-1 rounded-xl p-1.5 sm:p-2 text-center border',
           p.seat === myPlayerSeat ? 'bg-green-800/60 border-green-500' : 'bg-black/20 border-white/10',
         )}>
-          <p className="text-xs text-green-300 truncate">{p.nickname}{p.seat === myPlayerSeat ? ' (você)' : ''}</p>
-          <p className="text-lg sm:text-2xl font-black text-white">{scores[String(p.seat)] ?? 0}</p>
+          <p className="text-[11px] text-green-300 truncate leading-tight">{p.nickname}{p.seat === myPlayerSeat ? ' (você)' : ''}</p>
+          <p className="text-xl sm:text-2xl font-black text-white leading-tight">{scores[String(p.seat)] ?? 0}</p>
         </div>
       ))}
     </div>
