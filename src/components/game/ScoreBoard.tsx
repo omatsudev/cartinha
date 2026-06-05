@@ -12,10 +12,11 @@ interface ScoreBoardProps {
 export function ScoreBoard({ players, gameState, playerCount, myPlayerSeat }: ScoreBoardProps) {
   const isTeamGame = playerCount === 4
   const { scores } = gameState
+  const activePlayers = players.filter(p => p.role === 'player' && p.seat !== null)
 
   if (isTeamGame) {
-    const team0Players = players.filter(p => p.team === 0)
-    const team1Players = players.filter(p => p.team === 1)
+    const team0Players = activePlayers.filter(p => p.team === 0)
+    const team1Players = activePlayers.filter(p => p.team === 1)
     const team0Score = scores['0'] ?? 0
     const team1Score = scores['1'] ?? 0
     const myTeam = players.find(p => p.seat === myPlayerSeat)?.team
@@ -38,10 +39,10 @@ export function ScoreBoard({ players, gameState, playerCount, myPlayerSeat }: Sc
     )
   }
 
-  // 2-player Bisca
+  // 2-player
   return (
     <div className="flex gap-2">
-      {players.map(p => (
+      {activePlayers.map(p => (
         <div key={p.id} className={cn(
           'flex-1 rounded-xl p-2 sm:p-3 text-center border',
           p.seat === myPlayerSeat ? 'bg-green-800/60 border-green-500' : 'bg-black/20 border-white/10',

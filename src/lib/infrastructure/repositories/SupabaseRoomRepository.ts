@@ -22,8 +22,9 @@ function toPlayer(row: Record<string, unknown>): Player {
     roomId: row.room_id as string,
     userId: row.user_id as string,
     nickname: row.nickname as string,
-    seat: row.seat as number,
+    seat: row.seat as number | null,
     team: row.team as 0 | 1 | null,
+    role: (row.role as 'player' | 'spectator') ?? 'player',
     joinedAt: row.joined_at as string,
   }
 }
@@ -80,21 +81,24 @@ export class SupabaseRoomRepository implements IRoomRepository {
     if (error) throw new Error(error.message)
   }
 
-  async getPlayers(roomId: string): Promise<Player[]> {
-    const { data, error } = await supabase
+  async getPlayers(roomId: string, includeSpectators = false): Promise<Player[]> {
+    let query = supabase
       .from('card_room_players')
       .select()
       .eq('room_id', roomId)
-      .order('seat')
 
+    if (!includeSpectators) {
+      query = query.eq('role', 'player')
+    }
+
+    const { data, error } = await query.order('joined_at')
     if (error) return []
     return data.map(toPlayer)
   }
 
   async joinRoom(roomId: string, userId: string, nickname: string): Promise<Player> {
-    // Find next available seat
     const players = await this.getPlayers(roomId)
-    const takenSeats = players.map(p => p.seat)
+    const takenSeats = players.map(p => p.seat).filter(s => s !== null) as number[]
     const room = await this.findById(roomId)
     if (!room) throw new Error('Sala não encontrada')
     if (players.length >= room.maxPlayers) throw new Error('Sala cheia')
@@ -104,7 +108,18 @@ export class SupabaseRoomRepository implements IRoomRepository {
 
     const { data, error } = await supabase
       .from('card_room_players')
-      .upsert({ room_id: roomId, user_id: userId, nickname, seat, team }, { onConflict: 'room_id,user_id' })
+      .upsert({ room_id: roomId, user_id: userId, nickname, seat, team, role: 'player' }, { onConflict: 'room_id,user_id' })
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+    return toPlayer(data)
+  }
+
+  async joinAsSpectator(roomId: string, userId: string, nickname: string): Promise<Player> {
+    const { data, error } = await supabase
+      .from('card_room_players')
+      .upsert({ room_id: roomId, user_id: userId, nickname, seat: null, team: null, role: 'spectator' }, { onConflict: 'room_id,user_id' })
       .select()
       .single()
 

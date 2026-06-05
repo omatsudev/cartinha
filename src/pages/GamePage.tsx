@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GameProvider, useGame } from '@/lib/context/GameContext'
 import { GameBoard } from '@/components/game/GameBoard'
 import { ShufflePhase } from '@/components/game/ShufflePhase'
 import { ScoreBoard } from '@/components/game/ScoreBoard'
+import { ChatPanel, ChatFloatingButton, ChatDrawer } from '@/components/chat/ChatPanel'
 import { SupabaseGameRepository } from '@/lib/infrastructure/repositories/SupabaseGameRepository'
 import { SupabaseRoomRepository } from '@/lib/infrastructure/repositories/SupabaseRoomRepository'
 import { GAME_TYPE_LABEL } from '@/lib/domain/enums/GameType'
@@ -11,7 +12,8 @@ import { SUIT_SYMBOL, SUIT_LABEL } from '@/lib/domain/enums/Suit'
 import { seatToTeam } from '@/lib/domain/services/GameRulesEngine'
 import { startNextRoundUseCase, dealNewSubGameUseCase } from '@/lib/application/use-cases/RematchUseCase'
 import { ShuffleIntensity } from '@/lib/domain/entities/GameState'
-import { Trophy, Star } from 'lucide-react'
+import { Trophy, Star, Eye } from 'lucide-react'
+import { getUserId, getNickname } from '@/lib/auth/identity'
 
 const WIN_GOAL = 4
 
@@ -235,9 +237,38 @@ function MatchOverScreen() {
   )
 }
 
+function SpectatorView({ roomId }: { roomId: string }) {
+  const roomRepo = new SupabaseRoomRepository()
+  const userId = getUserId()
+  const nickname = getNickname() ?? 'Espectador'
+  const [joined, setJoined] = useState(false)
+
+  useEffect(() => {
+    roomRepo.joinAsSpectator(roomId, userId, nickname).then(() => setJoined(true))
+  }, [roomId])
+
+  return (
+    <div className="min-h-screen felt-table flex flex-col items-center justify-center px-4 gap-6">
+      <div className="text-center">
+        <Eye className="w-12 h-12 text-yellow-400 mx-auto mb-3" />
+        <h2 className="text-xl font-bold text-white">Modo espectador</h2>
+        <p className="text-green-400 text-sm mt-1">Você está assistindo esta partida</p>
+      </div>
+      {joined && (
+        <div className="w-full max-w-sm h-[60vh]">
+          <ChatPanel roomId={roomId} isSpectator className="h-full" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function GameContent() {
   const { room, players, gameState, myPlayer, userId } = useGame()
   const [handSizes, setHandSizes] = useState<Record<number, number>>({})
+  const [chatOpen, setChatOpen] = useState(false)
+  const [unread, setUnread] = useState(0)
+  const lastSeenRef = useRef(0)
   const gameRepo = new SupabaseGameRepository()
 
   async function loadHandSizes() {
@@ -245,7 +276,7 @@ function GameContent() {
     const sizes: Record<number, number> = {}
     for (const p of players) {
       const hand = await gameRepo.getHand(room.id, p.userId)
-      sizes[p.seat] = hand.length
+      if (p.seat !== null) sizes[p.seat] = hand.length
     }
     setHandSizes(sizes)
   }
@@ -261,6 +292,10 @@ function GameContent() {
       </div>
     )
   }
+
+  // User is spectator if not in the players list as a player
+  const isSpectator = !myPlayer || myPlayer.role === 'spectator'
+  if (isSpectator) return <SpectatorView roomId={room.id} />
 
   const trump = gameState.trumpSuit
 
@@ -284,9 +319,26 @@ function GameContent() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
-        <GameBoard playerHandSizes={handSizes} onRefreshHandSizes={loadHandSizes} />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Game area */}
+        <div className="flex-1 overflow-hidden relative">
+          <GameBoard playerHandSizes={handSizes} onRefreshHandSizes={loadHandSizes} />
+          {/* Floating chat button on mobile */}
+          <div className="absolute bottom-20 right-3 sm:hidden">
+            <ChatFloatingButton unread={unread} onClick={() => { setChatOpen(true); setUnread(0) }} />
+          </div>
+        </div>
+
+        {/* Sidebar chat on desktop */}
+        <div className="hidden sm:flex w-72 border-l border-green-800/40">
+          <ChatPanel roomId={room.id} isSpectator={false} className="flex-1 rounded-none border-none border-l-0" />
+        </div>
       </div>
+
+      {/* Mobile chat drawer */}
+      {chatOpen && (
+        <ChatDrawer roomId={room.id} isSpectator={false} onClose={() => setChatOpen(false)} />
+      )}
     </div>
   )
 }

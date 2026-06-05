@@ -35,7 +35,7 @@ export function GameBoard({ playerHandSizes, onRefreshHandSizes }: GameBoardProp
     ? parseCard(gameState.currentTrick[0].cardCode).suit
     : null
 
-  const opponents = players.filter(p => p.userId !== userId)
+  const opponents = players.filter(p => p.userId !== userId && p.role === 'player' && p.seat !== null)
   const getOpponentPosition = (opponentSeat: number): 'top' | 'left' | 'right' => {
     if (playerCount === 2) return 'top'
     const diff = (opponentSeat - myPlayer.seat + 4) % 4

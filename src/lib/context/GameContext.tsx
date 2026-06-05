@@ -3,9 +3,10 @@ import { supabase } from '../supabase'
 import { getUserId } from '../auth/identity'
 import { Room } from '../domain/entities/Room'
 import { Player } from '../domain/entities/Player'
-import { GameState } from '../domain/entities/GameState'
+import { GameState, GamePhase, ShuffleIntensity } from '../domain/entities/GameState'
 import { SupabaseRoomRepository } from '../infrastructure/repositories/SupabaseRoomRepository'
 import { SupabaseGameRepository } from '../infrastructure/repositories/SupabaseGameRepository'
+import { Suit } from '../domain/enums/Suit'
 
 interface GameContextValue {
   room: Room | null
@@ -26,6 +27,33 @@ const GameContext = createContext<GameContextValue>({
   refreshHand: async () => {},
   getHand: async () => [],
 })
+
+function rowToGameState(row: Record<string, unknown>): GameState {
+  return {
+    id: row.id as string,
+    roomId: row.room_id as string,
+    trumpSuit: row.trump_suit as Suit | null,
+    trumpCardCode: row.trump_card_code as string | null,
+    currentSeat: row.current_seat as number,
+    currentTrick: (row.current_trick as GameState['currentTrick']) ?? [],
+    lastTrick: (row.last_trick as GameState['currentTrick']) ?? [],
+    lastTrickWinnerSeat: row.last_trick_winner_seat as number | null,
+    scores: (row.scores as Record<string, number>) ?? {},
+    gameWins: (row.game_wins as Record<string, number>) ?? { '0': 0, '1': 0 },
+    dealerSeat: (row.dealer_seat as number) ?? 0,
+    phase: (row.phase as GamePhase) ?? 'playing',
+    useSessionDeck: row.use_session_deck as boolean | null,
+    shuffleIntensity: row.shuffle_intensity as ShuffleIntensity | null,
+    shuffleDeadline: row.shuffle_deadline as string | null,
+    sessionCards: (row.session_cards as string[]) ?? [],
+    subGameNumber: (row.sub_game_number as number) ?? 1,
+    tricksPlayed: row.tricks_played as number,
+    deckRemaining: row.deck_remaining as number,
+    gameOver: row.game_over as boolean,
+    winnerTeam: row.winner_team as number | null,
+    updatedAt: row.updated_at as string,
+  }
+}
 
 export function GameProvider({ roomId, children }: { roomId: string; children: ReactNode }) {
   const [room, setRoom] = useState<Room | null>(null)
@@ -49,14 +77,13 @@ export function GameProvider({ roomId, children }: { roomId: string; children: R
   }
 
   useEffect(() => {
-    // Retrieve bot IDs stored by WaitingRoomPage
     const stored = sessionStorage.getItem(`cartinha_bots_${roomId}`)
     if (stored) setBotIds(JSON.parse(stored))
 
     async function load() {
       const [r, ps, gs, hand] = await Promise.all([
         roomRepo.findById(roomId),
-        roomRepo.getPlayers(roomId),
+        roomRepo.getPlayers(roomId, true),
         gameRepo.getState(roomId),
         gameRepo.getHand(roomId, userId),
       ])
@@ -66,7 +93,6 @@ export function GameProvider({ roomId, children }: { roomId: string; children: R
       setMyHand(hand)
       setLoading(false)
     }
-
     load()
   }, [roomId])
 
@@ -82,21 +108,7 @@ export function GameProvider({ roomId, children }: { roomId: string; children: R
       .on('postgres_changes', { event: '*', schema: 'public', table: 'card_game_state', filter: `room_id=eq.${roomId}` },
         (payload) => {
           const row = payload.new as Record<string, unknown>
-          if (row) setGameState({
-            id: row.id as string,
-            roomId: row.room_id as string,
-            trumpSuit: row.trump_suit as GameState['trumpSuit'],
-            trumpCardCode: row.trump_card_code as string | null,
-            currentSeat: row.current_seat as number,
-            currentTrick: (row.current_trick as GameState['currentTrick']) ?? [],
-            lastTrickWinnerSeat: row.last_trick_winner_seat as number | null,
-            scores: row.scores as Record<string, number>,
-            tricksPlayed: row.tricks_played as number,
-            deckRemaining: row.deck_remaining as number,
-            gameOver: row.game_over as boolean,
-            winnerTeam: row.winner_team as number | null,
-            updatedAt: row.updated_at as string,
-          })
+          if (row) setGameState(rowToGameState(row))
         })
       .subscribe()
 

@@ -3,7 +3,8 @@ export interface Player {
   roomId: string
   userId: string
   nickname: string
-  seat: number
+  seat: number | null
   team: 0 | 1 | null
+  role: 'player' | 'spectator'
   joinedAt: string
 }

@@ -7,8 +7,9 @@ import { startGameUseCase } from '@/lib/application/use-cases/CreateRoomUseCase'
 import { Room } from '@/lib/domain/entities/Room'
 import { Player } from '@/lib/domain/entities/Player'
 import { ShareButton } from '@/components/lobby/ShareButton'
+import { ChatPanel } from '@/components/chat/ChatPanel'
 import { GAME_TYPE_LABEL } from '@/lib/domain/enums/GameType'
-import { Users, Crown, Clock, Bot } from 'lucide-react'
+import { Users, Crown, Clock, Bot, Eye } from 'lucide-react'
 
 const BOT_NICKNAMES = ['Bot Zé', 'Bot Maria', 'Bot João']
 
@@ -41,10 +42,12 @@ export default function WaitingRoomPage() {
 
   const [room, setRoom] = useState<Room | null>(null)
   const [players, setPlayers] = useState<Player[]>([])
+  const [spectators, setSpectators] = useState<Player[]>([])
   const [userId] = useState(getUserId)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
+  const [isSpectator, setIsSpectator] = useState(false)
   const startedRef = useRef(false)
 
   const roomRepo = new SupabaseRoomRepository()
@@ -58,20 +61,32 @@ export default function WaitingRoomPage() {
 
       setRoom(r)
 
-      // Join as human player if not already in room
+      // Join as player or spectator
       const ps = await roomRepo.getPlayers(r.id)
-      const alreadyIn = ps.find(p => p.userId === userId)
+      const allPs = await roomRepo.getPlayers(r.id, true)
+      const alreadyIn = allPs.find(p => p.userId === userId)
+      const nickname = getNickname() ?? 'Jogador'
+
       if (!alreadyIn) {
-        const nickname = getNickname() ?? 'Jogador'
-        try {
-          await roomRepo.joinRoom(r.id, userId, nickname)
-        } catch (e) {
-          setError((e as Error).message)
+        const isFull = ps.length >= r.maxPlayers
+        if (isFull) {
+          await roomRepo.joinAsSpectator(r.id, userId, nickname)
+          setIsSpectator(true)
+        } else {
+          try {
+            await roomRepo.joinRoom(r.id, userId, nickname)
+          } catch (e) {
+            setError((e as Error).message)
+          }
         }
+      } else if (alreadyIn.role === 'spectator') {
+        setIsSpectator(true)
       }
 
       const fresh = await roomRepo.getPlayers(r.id)
+      const freshAll = await roomRepo.getPlayers(r.id, true)
       setPlayers(fresh)
+      setSpectators(freshAll.filter(p => p.role === 'spectator'))
       setLoading(false)
 
       // Solo mode: fill bots and start immediately
@@ -114,7 +129,10 @@ export default function WaitingRoomPage() {
     const sub = supabase
       .channel(`waiting-${room.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'card_room_players', filter: `room_id=eq.${room.id}` },
-        () => roomRepo.getPlayers(room.id).then(setPlayers))
+        () => {
+          roomRepo.getPlayers(room.id).then(setPlayers)
+          roomRepo.getPlayers(room.id, true).then(all => setSpectators(all.filter(p => p.role === 'spectator')))
+        })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'card_rooms', filter: `id=eq.${room.id}` },
         (payload) => {
           const r = payload.new as Record<string, unknown>
@@ -155,8 +173,16 @@ export default function WaitingRoomPage() {
   const spotsLeft = room.maxPlayers - players.length
 
   return (
-    <div className="min-h-screen felt-table flex flex-col items-center justify-center px-4 py-8">
+    <div className="min-h-screen felt-table flex flex-col lg:flex-row items-start justify-center px-4 py-8 gap-4">
+      {/* Main panel */}
       <div className="w-full max-w-md">
+        {isSpectator && (
+          <div className="flex items-center gap-2 bg-yellow-900/30 border border-yellow-600/40 rounded-xl px-4 py-3 mb-4">
+            <Eye className="w-4 h-4 text-yellow-400" />
+            <p className="text-yellow-300 text-sm font-medium">Você está como espectador</p>
+          </div>
+        )}
+
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🃏</div>
           <h1 className="text-xl sm:text-2xl font-black text-white">{GAME_TYPE_LABEL[room.gameType]}</h1>
@@ -208,9 +234,26 @@ export default function WaitingRoomPage() {
               )
             })}
           </div>
+
+          {/* Spectators */}
+          {spectators.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-green-800/40">
+              <div className="flex items-center gap-1.5 text-xs text-yellow-500 mb-2">
+                <Eye className="w-3 h-3" />
+                <span>Espectadores ({spectators.length})</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {spectators.map(s => (
+                  <span key={s.id} className="text-xs bg-yellow-900/20 border border-yellow-800/40 text-yellow-300 px-2 py-1 rounded-full">
+                    {s.nickname}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {spotsLeft > 0 && !soloMode && (
+        {spotsLeft > 0 && !soloMode && !isSpectator && (
           <div className="bg-black/30 border border-green-700/50 rounded-2xl p-5 mb-4 backdrop-blur">
             <p className="text-sm text-green-300 mb-3 font-medium">
               Faltam {spotsLeft} jogador{spotsLeft > 1 ? 'es' : ''} — convide pelo WhatsApp:
@@ -219,7 +262,14 @@ export default function WaitingRoomPage() {
           </div>
         )}
 
-        {isHost && !soloMode && (
+        {isSpectator && spotsLeft > 0 && (
+          <div className="bg-black/30 border border-green-700/50 rounded-2xl p-5 mb-4 backdrop-blur">
+            <p className="text-sm text-green-300 mb-3 font-medium">Convide amigos para jogar:</p>
+            <ShareButton code={room.code} roomUrl={roomUrl} />
+          </div>
+        )}
+
+        {isHost && !soloMode && !isSpectator && (
           <button
             onClick={handleStart}
             disabled={!canStart || starting}
@@ -228,14 +278,25 @@ export default function WaitingRoomPage() {
             {starting ? 'Iniciando...' : canStart ? 'Iniciar partida!' : `Aguardando ${spotsLeft} jogador${spotsLeft > 1 ? 'es' : ''}...`}
           </button>
         )}
-        {!isHost && !soloMode && (
+        {!isHost && !soloMode && !isSpectator && (
           <p className="text-center text-green-500 text-sm py-2 flex items-center justify-center gap-2">
             <Clock className="w-4 h-4 animate-spin" />
             Aguardando o anfitrião iniciar...
           </p>
         )}
+        {isSpectator && (
+          <p className="text-center text-yellow-500 text-sm py-2 flex items-center justify-center gap-2">
+            <Clock className="w-4 h-4 animate-spin" />
+            Aguardando a partida começar...
+          </p>
+        )}
 
         {error && <p className="text-center text-red-400 text-sm mt-3">{error}</p>}
+      </div>
+
+      {/* Chat panel */}
+      <div className="w-full max-w-md lg:max-w-xs lg:sticky lg:top-8 h-80 lg:h-[500px]">
+        <ChatPanel roomId={room.id} isSpectator={isSpectator} className="h-full" />
       </div>
     </div>
   )
