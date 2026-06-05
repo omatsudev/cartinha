@@ -1,6 +1,4 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { GameProvider, useGame } from '@/lib/context/GameContext'
 import { GameBoard } from '@/components/game/GameBoard'
 import { SupabaseGameRepository } from '@/lib/infrastructure/repositories/SupabaseGameRepository'
@@ -8,6 +6,7 @@ import { GAME_TYPE_LABEL } from '@/lib/domain/enums/GameType'
 import { SUIT_SYMBOL, SUIT_LABEL } from '@/lib/domain/enums/Suit'
 import { seatToTeam } from '@/lib/domain/services/GameRulesEngine'
 import { Trophy } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 function GameContent() {
   const { room, players, gameState, myPlayer, userId } = useGame()
@@ -15,7 +14,6 @@ function GameContent() {
   const [handSizes, setHandSizes] = useState<Record<number, number>>({})
   const gameRepo = new SupabaseGameRepository()
 
-  // Track opponent hand sizes
   useEffect(() => {
     if (!room || !players.length || !userId) return
 
@@ -44,7 +42,6 @@ function GameContent() {
 
   return (
     <div className="min-h-screen felt-table flex flex-col">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-black/20 border-b border-green-800/50">
         <span className="text-sm font-bold text-white">
           {GAME_TYPE_LABEL[room.gameType]}
@@ -59,13 +56,11 @@ function GameContent() {
         <span className="text-xs text-green-400">Vazas: {gameState.tricksPlayed}</span>
       </div>
 
-      {/* Game board */}
       {!gameState.gameOver ? (
         <div className="flex-1 overflow-hidden">
           <GameBoard playerHandSizes={handSizes} />
         </div>
       ) : (
-        // Game over screen
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="bg-black/40 border border-green-700/50 rounded-3xl p-8 text-center max-w-sm w-full backdrop-blur">
             <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
@@ -74,9 +69,7 @@ function GameContent() {
             {room.maxPlayers === 4 ? (
               <div>
                 <p className="text-green-300 mb-4">
-                  {gameState.winnerTeam === 0
-                    ? `🎉 Equipe 1 venceu!`
-                    : `🎉 Equipe 2 venceu!`}
+                  {gameState.winnerTeam === 0 ? `🎉 Equipe 1 venceu!` : `🎉 Equipe 2 venceu!`}
                 </p>
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {[0, 1].map(team => (
@@ -94,7 +87,8 @@ function GameContent() {
               </div>
             ) : (
               <div className="space-y-2 mb-6">
-                {players.sort((a, b) => (gameState.scores[String(b.seat)] ?? 0) - (gameState.scores[String(a.seat)] ?? 0))
+                {players
+                  .sort((a, b) => (gameState.scores[String(b.seat)] ?? 0) - (gameState.scores[String(a.seat)] ?? 0))
                   .map((p, i) => (
                     <div key={p.id} className={`flex items-center justify-between rounded-xl px-4 py-3 ${
                       i === 0 ? 'bg-yellow-900/30 border border-yellow-600' : 'bg-black/20 border border-green-800'
@@ -107,7 +101,7 @@ function GameContent() {
             )}
 
             <button
-              onClick={() => navigate('/criar')}
+              onClick={() => navigate('/')}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl py-3 transition"
             >
               Nova partida
@@ -121,17 +115,8 @@ function GameContent() {
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>()
-  const navigate = useNavigate()
-  const [authed, setAuthed] = useState(false)
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate('/login')
-      else setAuthed(true)
-    })
-  }, [])
-
-  if (!authed || !roomId) return null
+  if (!roomId) return null
 
   return (
     <GameProvider roomId={roomId}>

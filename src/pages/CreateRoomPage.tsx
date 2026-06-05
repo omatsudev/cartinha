@@ -1,33 +1,34 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
+import { getUserId, getNickname } from '@/lib/auth/identity'
 import { createRoomUseCase } from '@/lib/application/use-cases/CreateRoomUseCase'
 import { GameType, GAME_TYPE_LABEL } from '@/lib/domain/enums/GameType'
-import { Users, LogIn } from 'lucide-react'
+import { Users, LogIn, Bot } from 'lucide-react'
 
 export default function CreateRoomPage() {
   const navigate = useNavigate()
   const [gameType, setGameType] = useState<GameType>('bisca')
   const [maxPlayers, setMaxPlayers] = useState<2 | 4>(2)
+  const [soloMode, setSoloMode] = useState(false)
   const [loading, setLoading] = useState(false)
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState('')
+
+  const effectiveMax = gameType === 'sueca' ? 4 : maxPlayers
 
   async function handleCreate() {
     setLoading(true)
     setError('')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { navigate('/login'); return }
-
-      const nickname = session.user.user_metadata?.nickname ?? session.user.email?.split('@')[0] ?? 'Jogador'
+      const userId = getUserId()
+      const nickname = getNickname() ?? 'Jogador'
       const room = await createRoomUseCase({
         gameType,
-        maxPlayers: gameType === 'sueca' ? 4 : maxPlayers,
-        hostId: session.user.id,
+        maxPlayers: effectiveMax,
+        hostId: userId,
         nickname,
       })
-      navigate(`/sala/${room.code}`)
+      navigate(`/sala/${room.code}`, { state: { soloMode, botCount: soloMode ? effectiveMax - 1 : 0 } })
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -35,11 +36,8 @@ export default function CreateRoomPage() {
     }
   }
 
-  async function handleJoin() {
+  function handleJoin() {
     if (!joinCode.trim()) return
-    setError('')
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { navigate('/login'); return }
     navigate(`/sala/${joinCode.trim().toUpperCase()}`)
   }
 
@@ -49,6 +47,7 @@ export default function CreateRoomPage() {
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">🃏</div>
           <h1 className="text-2xl sm:text-3xl font-black text-white">Nova partida</h1>
+          <p className="text-green-400 text-sm mt-1">Olá, {getNickname()}!</p>
         </div>
 
         <div className="space-y-4">
@@ -101,6 +100,33 @@ export default function CreateRoomPage() {
               </div>
             )}
 
+            {/* Solo mode toggle */}
+            <div className="mb-5">
+              <button
+                onClick={() => setSoloMode(!soloMode)}
+                className={`w-full flex items-center gap-3 rounded-xl py-3 px-4 font-medium text-sm transition-all border ${
+                  soloMode
+                    ? 'bg-blue-900/50 border-blue-500/70 text-blue-200'
+                    : 'bg-black/30 border-green-800 text-green-400 hover:border-green-600'
+                }`}
+              >
+                <Bot className={`w-5 h-5 ${soloMode ? 'text-blue-400' : 'text-green-600'}`} />
+                <div className="text-left">
+                  <div className="font-semibold">Jogar com computador</div>
+                  <div className={`text-xs mt-0.5 ${soloMode ? 'text-blue-300' : 'text-green-600'}`}>
+                    {soloMode
+                      ? `Você + ${effectiveMax - 1} bot${effectiveMax - 1 > 1 ? 's' : ''} — começa imediatamente`
+                      : 'Os outros assentos serão preenchidos por bots'}
+                  </div>
+                </div>
+                <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  soloMode ? 'bg-blue-500 border-blue-400' : 'border-green-700'
+                }`}>
+                  {soloMode && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </button>
+            </div>
+
             {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
 
             <button
@@ -108,7 +134,7 @@ export default function CreateRoomPage() {
               disabled={loading}
               className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-bold rounded-xl py-3.5 transition text-base"
             >
-              {loading ? 'Criando sala...' : 'Criar sala e convidar amigos'}
+              {loading ? 'Criando sala...' : soloMode ? 'Jogar sozinho' : 'Criar sala e convidar amigos'}
             </button>
           </div>
 
@@ -119,6 +145,7 @@ export default function CreateRoomPage() {
               <input
                 value={joinCode}
                 onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                onKeyDown={e => e.key === 'Enter' && handleJoin()}
                 placeholder="Código (ex: ABC123)"
                 maxLength={6}
                 className="flex-1 bg-black/30 border border-green-700/50 rounded-xl px-4 py-3 text-white placeholder-green-700 outline-none focus:border-green-400 transition font-mono text-lg tracking-widest uppercase"

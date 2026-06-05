@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '../supabase'
+import { getUserId } from '../auth/identity'
 import { Room } from '../domain/entities/Room'
 import { Player } from '../domain/entities/Player'
 import { GameState } from '../domain/entities/GameState'
@@ -12,14 +13,18 @@ interface GameContextValue {
   gameState: GameState | null
   myHand: string[]
   myPlayer: Player | null
-  userId: string | null
+  userId: string
+  botIds: string[]
   loading: boolean
   refreshHand: () => Promise<void>
+  getHand: (uid: string) => Promise<string[]>
 }
 
 const GameContext = createContext<GameContextValue>({
   room: null, players: [], gameState: null, myHand: [], myPlayer: null,
-  userId: null, loading: true, refreshHand: async () => {},
+  userId: '', botIds: [], loading: true,
+  refreshHand: async () => {},
+  getHand: async () => [],
 })
 
 export function GameProvider({ roomId, children }: { roomId: string; children: ReactNode }) {
@@ -27,51 +32,51 @@ export function GameProvider({ roomId, children }: { roomId: string; children: R
   const [players, setPlayers] = useState<Player[]>([])
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [myHand, setMyHand] = useState<string[]>([])
-  const [userId, setUserId] = useState<string | null>(null)
+  const [botIds, setBotIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
+  const userId = getUserId()
   const roomRepo = new SupabaseRoomRepository()
   const gameRepo = new SupabaseGameRepository()
 
-  async function load(uid: string) {
-    const [r, ps, gs, hand] = await Promise.all([
-      roomRepo.findById(roomId),
-      roomRepo.getPlayers(roomId),
-      gameRepo.getState(roomId),
-      gameRepo.getHand(roomId, uid),
-    ])
-    setRoom(r)
-    setPlayers(ps)
-    setGameState(gs)
-    setMyHand(hand)
-    setLoading(false)
+  async function getHand(uid: string): Promise<string[]> {
+    return gameRepo.getHand(roomId, uid)
   }
 
   async function refreshHand() {
-    if (!userId) return
     const hand = await gameRepo.getHand(roomId, userId)
     setMyHand(hand)
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const uid = session?.user?.id ?? null
-      setUserId(uid)
-      if (uid) load(uid)
-    })
+    // Retrieve bot IDs stored by WaitingRoomPage
+    const stored = sessionStorage.getItem(`cartinha_bots_${roomId}`)
+    if (stored) setBotIds(JSON.parse(stored))
+
+    async function load() {
+      const [r, ps, gs, hand] = await Promise.all([
+        roomRepo.findById(roomId),
+        roomRepo.getPlayers(roomId),
+        gameRepo.getState(roomId),
+        gameRepo.getHand(roomId, userId),
+      ])
+      setRoom(r)
+      setPlayers(ps)
+      setGameState(gs)
+      setMyHand(hand)
+      setLoading(false)
+    }
+
+    load()
   }, [roomId])
 
   useEffect(() => {
-    if (!userId) return
-
-    // Realtime: room players
     const playersSub = supabase
       .channel(`room-players-${roomId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'card_room_players', filter: `room_id=eq.${roomId}` },
         () => roomRepo.getPlayers(roomId).then(setPlayers))
       .subscribe()
 
-    // Realtime: game state
     const stateSub = supabase
       .channel(`game-state-${roomId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'card_game_state', filter: `room_id=eq.${roomId}` },
@@ -95,7 +100,6 @@ export function GameProvider({ roomId, children }: { roomId: string; children: R
         })
       .subscribe()
 
-    // Realtime: room status
     const roomSub = supabase
       .channel(`room-status-${roomId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'card_rooms', filter: `id=eq.${roomId}` },
@@ -105,7 +109,6 @@ export function GameProvider({ roomId, children }: { roomId: string; children: R
         })
       .subscribe()
 
-    // Refresh hand when game state changes (after trick completion)
     const handSub = supabase
       .channel(`hand-${roomId}-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'card_hands', filter: `room_id=eq.${roomId}` },
@@ -118,12 +121,12 @@ export function GameProvider({ roomId, children }: { roomId: string; children: R
       supabase.removeChannel(roomSub)
       supabase.removeChannel(handSub)
     }
-  }, [roomId, userId])
+  }, [roomId])
 
   const myPlayer = players.find(p => p.userId === userId) ?? null
 
   return (
-    <GameContext.Provider value={{ room, players, gameState, myHand, myPlayer, userId, loading, refreshHand }}>
+    <GameContext.Provider value={{ room, players, gameState, myHand, myPlayer, userId, botIds, loading, refreshHand, getHand }}>
       {children}
     </GameContext.Provider>
   )
