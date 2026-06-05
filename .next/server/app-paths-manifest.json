@@ -1,0 +1,12 @@
+{
+  "/(auth)/cadastro/page": "app-edge-has-no-entrypoint",
+  "/(auth)/login/page": "app-edge-has-no-entrypoint",
+  "/(dashboard)/calendario/page": "app-edge-has-no-entrypoint",
+  "/(dashboard)/historico/page": "app-edge-has-no-entrypoint",
+  "/(dashboard)/page": "app-edge-has-no-entrypoint",
+  "/(dashboard)/registrar/page": "app-edge-has-no-entrypoint",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app-edge-has-no-entrypoint",
+  "/api/auth/logout/route": "app-edge-has-no-entrypoint",
+  "/page": "app-edge-has-no-entrypoint"
+}

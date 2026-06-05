@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/registrar/page": "app-edge-has-no-entrypoint"
+}

@@ -1,0 +1,17 @@
+{
+  "node": {},
+  "edge": {
+    "40f3165c85aaf2b9ea41c678b0da59d5d7ac86928c": {
+      "workers": {
+        "app/(dashboard)/registrar/page": {
+          "moduleId": 6770,
+          "async": false,
+          "exportedName": "saveRecordAction",
+          "filename": "app/(dashboard)/registrar/actions.ts"
+        }
+      },
+      "exportedName": "saveRecordAction",
+      "filename": "app/(dashboard)/registrar/actions.ts"
+    }
+  }
+}
