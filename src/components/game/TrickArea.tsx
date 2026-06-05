@@ -25,29 +25,37 @@ export function TrickArea({ trick, lastTrick, players, trumpSuit, trumpCardCode,
   // In Sueca (no deck), show trump suit badge throughout the game
   const showTrumpBadge = trumpSuit && !showTrumpCard && deckRemaining === 0
 
-  // Show the last completed trick for 2 seconds before fading
-  const [visibleTrick, setVisibleTrick] = useState<TrickCard[]>(trick)
+  // Show the completed trick for 2 seconds; lock display so fast bots/players don't erase it
+  const [displayTrick, setDisplayTrick] = useState<TrickCard[]>(trick)
+  const [showingCompleted, setShowingCompleted] = useState(false)
   const [fading, setFading] = useState(false)
   const prevTrickRef = useRef<TrickCard[]>(trick)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (trick.length > 0) {
-      // Ongoing trick — clear any lingering display
-      if (timerRef.current) clearTimeout(timerRef.current)
-      setFading(false)
-      setVisibleTrick(trick)
+      // Always update prevTrick so next completion detection works, even while locked
       prevTrickRef.current = trick
-    } else if (prevTrickRef.current.length > 0 && lastTrick.length > 0) {
-      // Trick just completed — show it for 2 seconds
+      if (showingCompleted) return  // locked — don't overwrite the 4-card display
       if (timerRef.current) clearTimeout(timerRef.current)
-      setVisibleTrick(lastTrick)
       setFading(false)
-      timerRef.current = setTimeout(() => setFading(true), 1500)
+      setDisplayTrick(trick)
+    } else if (prevTrickRef.current.length > 0 && lastTrick.length > 0) {
+      // Trick just completed — show all 4 cards, lock display for 2.2s
+      if (timerRef.current) clearTimeout(timerRef.current)
+      setDisplayTrick(lastTrick)
+      setFading(false)
+      setShowingCompleted(true)
       prevTrickRef.current = []
+      timerRef.current = setTimeout(() => {
+        setFading(true)
+        setTimeout(() => { setShowingCompleted(false); setFading(false) }, 400)
+      }, 1800)
+    } else if (!showingCompleted) {
+      setDisplayTrick([])
     }
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [trick, lastTrick])
+  }, [trick, lastTrick, showingCompleted])
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
@@ -88,13 +96,13 @@ export function TrickArea({ trick, lastTrick, players, trumpSuit, trumpCardCode,
 
       {/* Current / last trick */}
       <div className={cn(
-        'flex items-center justify-center gap-2 sm:gap-3 transition-opacity duration-500',
+        'flex items-center justify-center gap-2 sm:gap-3 transition-opacity duration-400',
         fading && 'opacity-0',
       )}>
-        {visibleTrick.length === 0 ? (
+        {displayTrick.length === 0 ? (
           <p className="text-green-400/50 text-sm italic">Mesa vazia</p>
         ) : (
-          visibleTrick.map((t) => {
+          displayTrick.map((t) => {
             const player = players.find(p => p.seat === t.seat)
             return (
               <div key={t.seat} className="flex flex-col items-center gap-1">
