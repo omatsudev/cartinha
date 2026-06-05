@@ -14,9 +14,9 @@ interface CardProps {
 }
 
 const sizes = {
-  sm: { card: 'w-10 h-14 sm:w-12 sm:h-16', label: 'text-[7px]', sym: 'text-[8px]', pad: 'p-[2px]' },
-  md: { card: 'w-14 h-20 sm:w-16 sm:h-24', label: 'text-[9px]', sym: 'text-[11px]', pad: 'p-[3px]' },
-  lg: { card: 'w-16 h-24 sm:w-20 sm:h-28 md:w-24 md:h-32', label: 'text-[11px]', sym: 'text-[13px]', pad: 'p-1' },
+  sm: { card: 'w-14 h-20 sm:w-16 sm:h-24', label: 'text-[10px]', sym: 'text-[12px]', pad: 'p-[3px]' },
+  md: { card: 'w-18 h-24 sm:w-20 sm:h-28', label: 'text-[12px]', sym: 'text-[14px]', pad: 'p-1' },
+  lg: { card: 'w-20 h-28 sm:w-24 sm:h-32 md:w-28 md:h-36', label: 'text-[14px]', sym: 'text-[17px]', pad: 'p-[5px]' },
 }
 
 // Pip positions in "0 0 100 140" viewBox. y > 71 = inverted (bottom half)
@@ -88,7 +88,7 @@ function PipLayout({ value, suit }: { value: CardValue; suit: Suit }) {
   const positions = PIP_POSITIONS[value]
   if (!positions) return null
   const isAce = value === 'A'
-  const pipSize = isAce ? 52 : 22
+  const pipSize = isAce ? 62 : 26
 
   return (
     <svg viewBox="0 0 100 140" className="w-full h-full">

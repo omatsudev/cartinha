@@ -41,8 +41,8 @@ export function PlayerHand({ cards, isMyTurn, onPlayCard, gameType, ledSuit }: P
     <div className="flex flex-col items-center gap-3">
       {/* Cards fan */}
       <div className={cn(
-        'flex items-end justify-center',
-        cards.length <= 4 ? 'gap-1.5 sm:gap-2' : '-space-x-3 sm:-space-x-2',
+        'flex items-end justify-center flex-wrap',
+        cards.length <= 4 ? 'gap-2' : cards.length <= 7 ? '-space-x-4 sm:-space-x-3' : '-space-x-8 sm:-space-x-6',
       )}>
         {cards.map((code) => (
           <CardComponent

@@ -56,24 +56,29 @@ export function TrickArea({ trick, lastTrick, players, trumpSuit, trumpCardCode,
       <div className="flex items-center gap-3 flex-wrap justify-center">
         {showTrumpCard && (
           <div className="flex flex-col items-center gap-1">
-            <span className="text-green-400 text-xs">Trunfo</span>
-            <CardComponent code={trumpCardCode!} size="sm" />
+            <span className="text-green-300 text-xs font-medium">Trunfo</span>
+            <CardComponent code={trumpCardCode!} size="md" />
           </div>
         )}
         {showTrumpBadge && (
-          <div className={cn('flex items-center gap-1 px-3 py-1.5 rounded-xl border text-sm font-bold', SUIT_COLOR[trumpSuit!],
-            trumpSuit === 'ouros' || trumpSuit === 'copas' ? 'border-red-700/50 bg-red-950/30' : 'border-gray-700/50 bg-black/30',
-          )}>
-            <span className="text-xs text-green-400 font-normal mr-0.5">Trunfo</span>
-            {SUIT_SYMBOL[trumpSuit!]}
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-green-300 text-xs font-medium">Trunfo</span>
+            <div className={cn(
+              'flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border-2 bg-white shadow-md',
+              trumpSuit === 'ouros' || trumpSuit === 'copas'
+                ? 'border-red-400 text-red-600'
+                : 'border-slate-700 text-slate-900',
+            )}>
+              <span className="text-2xl font-black leading-none">{SUIT_SYMBOL[trumpSuit!]}</span>
+            </div>
           </div>
         )}
         {deckRemaining > 0 && (
           <div className="flex flex-col items-center gap-1">
-            <span className="text-green-400 text-xs">Baralho</span>
+            <span className="text-green-300 text-xs font-medium">Baralho</span>
             <div className="relative">
-              <CardComponent code="X_X" faceDown size="sm" />
-              <span className="absolute -bottom-1 -right-1 bg-green-700 text-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <CardComponent code="X_X" faceDown size="md" />
+              <span className="absolute -bottom-1 -right-1 bg-green-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
                 {deckRemaining}
               </span>
             </div>
