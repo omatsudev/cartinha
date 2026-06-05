@@ -93,6 +93,7 @@ export function GameBoard({ playerHandSizes, onRefreshHandSizes }: GameBoardProp
             trick={gameState.currentTrick}
             lastTrick={gameState.lastTrick}
             players={players}
+            trumpSuit={gameState.trumpSuit}
             trumpCardCode={gameState.trumpCardCode}
             deckRemaining={gameState.deckRemaining}
             tricksPlayed={gameState.tricksPlayed}

@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils/cn'
 import { CardComponent } from './CardComponent'
 import { TrickCard } from '@/lib/domain/entities/GameState'
 import { Player } from '@/lib/domain/entities/Player'
-import { SUIT_SYMBOL, SUIT_LABEL } from '@/lib/domain/enums/Suit'
+import { Suit, SUIT_SYMBOL, SUIT_COLOR } from '@/lib/domain/enums/Suit'
 import { parseCard } from '@/lib/domain/entities/Card'
 import { useEffect, useRef, useState } from 'react'
 
@@ -10,6 +10,7 @@ interface TrickAreaProps {
   trick: TrickCard[]
   lastTrick: TrickCard[]
   players: Player[]
+  trumpSuit: Suit | null
   trumpCardCode: string | null
   deckRemaining: number
   tricksPlayed: number
@@ -17,10 +18,12 @@ interface TrickAreaProps {
   myPlayerSeat: number | null
 }
 
-export function TrickArea({ trick, lastTrick, players, trumpCardCode, deckRemaining, tricksPlayed, currentSeat, myPlayerSeat }: TrickAreaProps) {
+export function TrickArea({ trick, lastTrick, players, trumpSuit, trumpCardCode, deckRemaining, tricksPlayed, currentSeat, myPlayerSeat }: TrickAreaProps) {
   const trump = trumpCardCode ? parseCard(trumpCardCode) : null
-  // Hide trump card display after each player has played 3 cards
+  // Show trump card when there are still cards in the deck (Bisca), hide after 3 tricks
   const showTrumpCard = trump && tricksPlayed < 3
+  // In Sueca (no deck), show trump suit badge throughout the game
+  const showTrumpBadge = trumpSuit && !showTrumpCard && deckRemaining === 0
 
   // Show the last completed trick for 2 seconds before fading
   const [visibleTrick, setVisibleTrick] = useState<TrickCard[]>(trick)
@@ -55,6 +58,14 @@ export function TrickArea({ trick, lastTrick, players, trumpCardCode, deckRemain
           <div className="flex flex-col items-center gap-1">
             <span className="text-green-400 text-xs">Trunfo</span>
             <CardComponent code={trumpCardCode!} size="sm" />
+          </div>
+        )}
+        {showTrumpBadge && (
+          <div className={cn('flex items-center gap-1 px-3 py-1.5 rounded-xl border text-sm font-bold', SUIT_COLOR[trumpSuit!],
+            trumpSuit === 'ouros' || trumpSuit === 'copas' ? 'border-red-700/50 bg-red-950/30' : 'border-gray-700/50 bg-black/30',
+          )}>
+            <span className="text-xs text-green-400 font-normal mr-0.5">Trunfo</span>
+            {SUIT_SYMBOL[trumpSuit!]}
           </div>
         )}
         {deckRemaining > 0 && (
