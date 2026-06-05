@@ -6,13 +6,17 @@ import { TrickArea } from './TrickArea'
 import { ScoreBoard } from './ScoreBoard'
 import { OpponentHand } from './OpponentHand'
 import { useBotPlayer } from '@/hooks/useBotPlayer'
+import { useEffect, useState } from 'react'
+import { SupabaseGameRepository } from '@/lib/infrastructure/repositories/SupabaseGameRepository'
 
 interface GameBoardProps {
   playerHandSizes: Record<number, number>
+  onRefreshHandSizes: () => void
 }
 
-export function GameBoard({ playerHandSizes }: GameBoardProps) {
+export function GameBoard({ playerHandSizes, onRefreshHandSizes }: GameBoardProps) {
   const { room, players, gameState, myHand, myPlayer, userId, botIds, refreshHand, getHand } = useGame()
+  const gameRepo = new SupabaseGameRepository()
 
   useBotPlayer({
     room,
@@ -20,13 +24,13 @@ export function GameBoard({ playerHandSizes }: GameBoardProps) {
     gameState,
     botIds,
     getHand,
-    onHandChange: refreshHand,
+    onHandChange: () => { refreshHand(); onRefreshHandSizes() },
   })
 
   if (!room || !gameState || !myPlayer || !userId) return null
 
   const playerCount = room.maxPlayers
-  const isMyTurn = gameState.currentSeat === myPlayer.seat
+  const isMyTurn = gameState.currentSeat === myPlayer.seat && gameState.phase === 'playing'
   const ledSuit = gameState.currentTrick.length > 0
     ? parseCard(gameState.currentTrick[0].cardCode).suit
     : null
@@ -54,6 +58,7 @@ export function GameBoard({ playerHandSizes }: GameBoardProps) {
       playerIds,
     })
     await refreshHand()
+    onRefreshHandSizes()
   }
 
   return (
@@ -66,7 +71,7 @@ export function GameBoard({ playerHandSizes }: GameBoardProps) {
             key={p.id}
             player={p}
             cardCount={playerHandSizes[p.seat] ?? 0}
-            isCurrentTurn={gameState.currentSeat === p.seat}
+            isCurrentTurn={gameState.currentSeat === p.seat && gameState.phase === 'playing'}
             position="top"
           />
         ))}
@@ -78,17 +83,19 @@ export function GameBoard({ playerHandSizes }: GameBoardProps) {
             key={p.id}
             player={p}
             cardCount={playerHandSizes[p.seat] ?? 0}
-            isCurrentTurn={gameState.currentSeat === p.seat}
+            isCurrentTurn={gameState.currentSeat === p.seat && gameState.phase === 'playing'}
             position="left"
           />
         ))}
 
-        <div className="flex-1 felt-table rounded-2xl border border-green-700/50 flex items-center justify-center p-3 sm:p-6 min-h-[120px] sm:min-h-[160px]">
+        <div className="flex-1 felt-table rounded-2xl border border-green-700/50 flex items-center justify-center p-2 sm:p-4 min-h-[130px] sm:min-h-[160px]">
           <TrickArea
             trick={gameState.currentTrick}
+            lastTrick={gameState.lastTrick}
             players={players}
             trumpCardCode={gameState.trumpCardCode}
             deckRemaining={gameState.deckRemaining}
+            tricksPlayed={gameState.tricksPlayed}
             currentSeat={gameState.currentSeat}
             myPlayerSeat={myPlayer.seat}
           />
@@ -99,7 +106,7 @@ export function GameBoard({ playerHandSizes }: GameBoardProps) {
             key={p.id}
             player={p}
             cardCount={playerHandSizes[p.seat] ?? 0}
-            isCurrentTurn={gameState.currentSeat === p.seat}
+            isCurrentTurn={gameState.currentSeat === p.seat && gameState.phase === 'playing'}
             position="right"
           />
         ))}
